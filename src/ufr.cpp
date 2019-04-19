@@ -440,7 +440,7 @@ void operation_BlockWrite()
     }
     else
     {
-        cout << "Error, status is " << UFR_Status2String(status);
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
     }
 }
 
@@ -500,7 +500,7 @@ void operation_LinearRead()
     }
     else
     {
-        cout << "Error, status is " << UFR_Status2String(status);
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
     }
 }
 
