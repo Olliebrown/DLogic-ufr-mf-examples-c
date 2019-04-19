@@ -108,9 +108,10 @@ void usage(void)
         printCurrentAuthConfig();
 		printf("+------------------------------------------------+\n"
 			   "|   Block (Read/Write) and Linear (Read/Write)   |\n"
-			   "|                 version 1.0                    |\n"
-			   "+------------------------------------------------+\n"
-			   "                             For exit, hit escape.\n");
+			   "|                 version 1.0                    |\n");
+	   cout << "|             DLL version " << GetDllVersionStr() << "                  |\n";
+		cout <<"+------------------------------------------------+\n";
+		printf("                             For exit, hit escape.\n");
 		printf("--------------------------------------------------\n");
 		printf(" (1) - Change authentication mode\n"
 			   " (2) - Change authentication key\n"
