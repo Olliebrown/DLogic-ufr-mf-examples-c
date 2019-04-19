@@ -57,6 +57,11 @@ int main(void)
 	{
 		while (!_kbhit())
 		{
+			#if __WIN32 || __WIN64
+			Sleep(300);
+			#else // if linux || __linux__ || __APPLE__
+				usleep(300000);
+			#endif
 			status = GetCardIdEx(&sak, uid, &uid_size);
 			switch (status)
 			{
@@ -88,19 +93,8 @@ int main(void)
 					ReaderClose();
 					printf(" Fatal error while trying to read card, status is: %s\n", UFR_Status2String(status));
 					getchar();
-
-				#if linux || __linux__ || __APPLE__
-					_resetTermios();
-					tcflush(0, TCIFLUSH); // Clear stdin to prevent characters appearing on prompt
-				#endif
-
 					return EXIT_FAILURE;
 			}
-#if __WIN32 || __WIN64
-			Sleep(300);
-#else // if linux || __linux__ || __APPLE__
-			usleep(300000);
-#endif
 		}
 		
 		key = _getch();
