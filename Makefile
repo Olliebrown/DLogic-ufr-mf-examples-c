@@ -103,8 +103,8 @@ CFLGLIN=$(CPPFLAGS)
 
 CPPCL32=g++
 CPPCL64=g++
-LNKL32=-s -static-libstdc++ -static-libgcc -L../lib/linux/x86 -m32 -static -pthread
-LNKL64=-s -static-libstdc++ -static-libgcc -L../lib/linux/x86_64 -m64 -static -pthread
+LNKL32=-s -L../lib/linux/x86 -m32
+LNKL64=-s -L../lib/linux/x86_64 -m64
 
 lin32_release :
 	echo "Building 32-bit executable, version:" $(APP_VER)
