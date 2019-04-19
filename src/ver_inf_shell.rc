@@ -1,0 +1,45 @@
+#include "winver.h"
+#include "version.mk.h"
+
+// Version resource file
+
+VS_VERSION_INFO		VERSIONINFO
+FILEVERSION			MAJOR_VER,MINOR_VER,0,0
+PRODUCTVERSION		MINOR_VER,MINOR_VER
+FILEFLAGSMASK		VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+	FILEFLAGS		VS_FF_DEBUG | VS_FF_PRERELEASE
+#else
+	FILEFLAGS 		0x0L
+#endif
+
+FILEOS			VOS_NT_WINDOWS32
+FILETYPE		VFT_DLL
+FILESUBTYPE		0
+
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904e4"
+        BEGIN
+            VALUE "CompanyName", "Digital Logic Ltd."
+            VALUE "FileDescription", "Digital Logic uFR NFC readers console shell"
+            VALUE "FileVersion", EXPAND_ADD_0_0(APP_VER)
+            VALUE "InternalName", "Digital Logic uFR NFC readers shell"
+            VALUE "LegalCopyright", "\xA9 2009-2019 Digital Logic Ltd." // Copyright (C)
+            VALUE "LegalTrademarks1", "Digital Logic"
+            VALUE "LegalTrademarks2", "uFR"
+#if WIN64
+            VALUE "OriginalFilename", "ufr.exe"
+#else
+            VALUE "OriginalFilename", "ufr.exe"
+#endif
+            VALUE "ProductName", "Digital Logic uFR NFC readers shell"
+            VALUE "ProductVersion", EXPAND(APP_VER)
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
+END

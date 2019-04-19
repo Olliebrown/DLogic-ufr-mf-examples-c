@@ -1,0 +1,75 @@
+# depslib dependency file v1.0
+1555596127 source:c:\users\konferencija\desktop\projekti\block_and_linear_read_write_cplusplus\main.cpp
+	<iostream>
+	<conio.h>
+	<windows.h>
+	<unistd.h>
+	<termios.h>
+	"conio_gnu.h"
+	"ufr.h"
+
+1555595580 c:\users\konferencija\desktop\projekti\block_and_linear_read_write_cplusplus\ufr.h
+	<string>
+	<iostream>
+	<sstream>
+	<cstring>
+	<string.h>
+	"lib/include/uFCoder.h"
+
+1555590503 c:\users\konferencija\desktop\projekti\block_and_linear_read_write_cplusplus\lib\include\ufcoder.h
+	<stdint.h>
+	<stddef.h>
+
+1555596127 source:c:\users\konferencija\desktop\projekti\block_and_linear_read_write_cplusplus\ufr.cpp
+	"ufr.h"
+	<conio.h>
+	<windows.h>
+	<unistd.h>
+	<termios.h>
+	"conio_gnu.h"
+
+1555580744 source:c:\users\konferencija\desktop\projekti\block_and_linear_read_write_cplusplus\conio_gnu.cpp
+	<termios.h>
+	<stdio.h>
+	<unistd.h>
+	<sys/types.h>
+	<sys/time.h>
+	<sys/ioctl.h>
+	"conio_gnu.h"
+
+1555580744 c:\users\konferencija\desktop\projekti\block_and_linear_read_write_cplusplus\conio_gnu.h
+
+1555597825 source:c:\users\konferencija\desktop\projekti\block_and_linear_read_write_cplusplus\src\conio_gnu.cpp
+	<termios.h>
+	<stdio.h>
+	<unistd.h>
+	<sys/types.h>
+	<sys/time.h>
+	<sys/ioctl.h>
+	"src/conio_gnu.h"
+
+1555597851 source:c:\users\konferencija\desktop\projekti\block_and_linear_read_write_cplusplus\src\main.cpp
+	<iostream>
+	<conio.h>
+	<windows.h>
+	<unistd.h>
+	<termios.h>
+	"src/conio_gnu.h"
+	"../src/ufr.h"
+
+1555597845 c:\users\konferencija\desktop\projekti\block_and_linear_read_write_cplusplus\src\ufr.h
+	<string>
+	<iostream>
+	<sstream>
+	<cstring>
+	<string.h>
+	"../lib/include/uFCoder.h"
+
+1555597838 source:c:\users\konferencija\desktop\projekti\block_and_linear_read_write_cplusplus\src\ufr.cpp
+	"../src/ufr.h"
+	<conio.h>
+	<windows.h>
+	<unistd.h>
+	<termios.h>
+	"src/conio_gnu.h"
+
