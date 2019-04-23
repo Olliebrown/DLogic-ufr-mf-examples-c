@@ -37,7 +37,7 @@ int main(void)
         printf("--------------------------------------------------\n");
         printf("       uFR NFC reader successfully opened.\n");
         printf("--------------------------------------------------\n");
-        //ReaderUISignal(1, 1);
+        ReaderUISignal(1, 1);
     }
     else
     {
@@ -135,14 +135,17 @@ UFR_STATUS ReaderOpeningMode()
 
         case '2':
             cout << "Enter reader type: " << endl;
-            cin >> reader_type;
+			scanf("%d%*c", &reader_type);
             fflush(stdin);
             cout << endl << "Enter port name: " << endl;
-            getline(cin, portNameStr);
+            cin >> portInterfaceStr;
+			fflush(stdin);
             cout << endl << "Enter port interface: " << endl;
-            getline(cin, portInterfaceStr);
+            cin >> portInterfaceStr;
+			fflush(stdin);
             cout << endl << "Enter argument: " << endl;
-            getline(cin, argumentStr);
+            cin >> argumentStr;
+			fflush(stdin);
 
             if(portInterfaceStr == "U")
             {
@@ -282,14 +285,6 @@ c_string GetDlTypeName(uint8_t dl_type_code) {
 		return "DL_MIKRON_MIK640D";
 	case NFC_T2T_GENERIC:
 		return "NFC_T2T_GENERIC";
-	case DL_NT3H_1101:
-		return "DL_NT3H_1101";
-	case DL_NT3H_1201:
-		return "DL_NT3H_1201";
-	case DL_NT3H_2111:
-		return "DL_NT3H_2111";
-	case DL_NT3H_2211:
-		return "DL_NT3H_2211";
 	case DL_MIFARE_MINI:
 		return "DL_MIFARE_MINI";
 	case DL_MIFARE_CLASSIC_1K:

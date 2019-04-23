@@ -109,7 +109,7 @@ void usage(void)
 		printf("+------------------------------------------------+\n"
 			   "|   Block (Read/Write) and Linear (Read/Write)   |\n"
 			   "|                 version 1.0                    |\n");
-	   cout << "|             DLL version " << GetDllVersionStr() << "                  |\n";
+	   cout << "|             DLL version " << GetDllVersionStr() << "                 |\n";
 		cout <<"+------------------------------------------------+\n";
 		printf("                             For exit, hit escape.\n");
 		printf("--------------------------------------------------\n");
