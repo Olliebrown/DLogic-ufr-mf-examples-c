@@ -31,19 +31,18 @@ int main(void)
 	UFR_STATUS status;
 
 	status = ReaderOpeningMode();
+    
+    if (status != UFR_OK)
+	{
+		printf("Error while opening device, status is: 0x%08X\n", status);
+		getchar();
+		return EXIT_FAILURE;
+	}
 
-    if(!status)
-    {
-        printf("--------------------------------------------------\n");
-        printf("       uFR NFC reader successfully opened.\n");
-        printf("--------------------------------------------------\n");
-        ReaderUISignal(1, 1);
-    }
-    else
-    {
-        cout << "Error while trying to open reader, status is " << UFR_Status2String(status) << endl;
-        return EXIT_FAILURE;
-    }
+	printf("--------------------------------------------------\n");
+    printf("       uFR NFC reader successfully opened.\n");
+    printf("--------------------------------------------------\n");
+    ReaderUISignal(1, 1);
 
     #if __WIN32 || __WIN64
 			Sleep(300);
@@ -96,10 +95,10 @@ int main(void)
 					return EXIT_FAILURE;
 			}
 		}
-		
+
 		key = _getch();
 		menu(key);
-		
+
 	}
 	while (key != '\x1b');
 
@@ -111,11 +110,7 @@ int main(void)
 UFR_STATUS ReaderOpeningMode()
 {
     char mode = 0;
-    uint32_t reader_type = 0;
-    string portNameStr = "";
-    string portInterfaceStr = "";
-    string argumentStr = "";
-    uint32_t port_interface = 0;
+
     UFR_STATUS status;
 
     cout << "Choose reader opening mode:" << endl;
@@ -126,48 +121,51 @@ UFR_STATUS ReaderOpeningMode()
 	#else
     mode = _getch();
 	#endif
-	
-    switch(mode)
-    {
-        case '1':
+
+    if (mode == '1'){
             status = ReaderOpen();
-            break;
+    } else if (mode == '2'){
+        uint32_t reader_type = 0;
+        std::string portNameStr = "";
+        std::string portInterfaceStr = "";
+        std::string argumentStr = "";
+        uint32_t port_interface = 0;
 
-        case '2':
-            cout << "Enter reader type: " << endl;
-			scanf("%d%*c", &reader_type);
-            fflush(stdin);
-            cout << endl << "Enter port name: " << endl;
-            cin >> portInterfaceStr;
-			fflush(stdin);
-            cout << endl << "Enter port interface: " << endl;
-            cin >> portInterfaceStr;
-			fflush(stdin);
-            cout << endl << "Enter argument: " << endl;
-            cin >> argumentStr;
-			fflush(stdin);
+        std::cout << "Enter reader type: " << std::endl;
+        scanf("%d%*c", &reader_type);
+        fflush(stdin);
+        std::cout << "Enter port name: " << std::endl;
+        std::cin >> portNameStr;
+		fflush(stdin);
+        std::cout << "Enter port interface: " << std::endl;
+        std::cin >> portInterfaceStr;
+		fflush(stdin);
+        std::cout << "Enter argument: " << std::endl;
+        std::cin >> argumentStr;
+		fflush(stdin);
 
-            if(portInterfaceStr == "U")
-            {
+        if(portInterfaceStr == "U") {
                 port_interface = 85;
             }
-            else if(portInterfaceStr == "T")
-            {
+        else if(portInterfaceStr == "T") {
                 port_interface = 84;
             }
-            else
-            {
+        else {
                 port_interface = atoi(portInterfaceStr.c_str());
             }
+            char port_name[portNameStr.length() + 1];
+            char arg[argumentStr.length() + 1];
+            memset(port_name,0, sizeof(port_name));
+            memset(arg,0, sizeof(arg));
 
-            status = ReaderOpenEx(reader_type, portNameStr.c_str(), port_interface, (void * )argumentStr.c_str());
-            break;
+            strcpy(port_name, portNameStr.c_str());
+            strcpy(arg,argumentStr.c_str());
 
-        default:
+             status = ReaderOpenEx(reader_type, port_name, port_interface, (void * )arg);
+            } else{
             cout << "Wrong input choose 1 or 2" << endl;
-            break;
-    }
-
+            ReaderOpeningMode();
+            }
     return status;
 }
 

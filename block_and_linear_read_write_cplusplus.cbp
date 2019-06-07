@@ -36,7 +36,6 @@
 			<Add library="uFCoder-x86" />
 			<Add directory="lib/windows/x86" />
 		</Linker>
-		<Unit filename="src/conio_gnu.cpp" />
 		<Unit filename="src/conio_gnu.h" />
 		<Unit filename="src/main.cpp" />
 		<Unit filename="src/ufr.cpp" />
