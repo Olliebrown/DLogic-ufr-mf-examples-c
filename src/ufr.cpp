@@ -17,9 +17,11 @@ const char hexChars[22] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 
 uint32_t auth_mode = 4;
 uint8_t auth_key = MIFARE_AUTHENT1A;
+uint8_t auth_key_aes;
 uint8_t key_index = 0;
 uint8_t PK_CRYPTO1_key[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 uint8_t PK_AES_key[16] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+bool sam_used = false;
 
 
 #if linux || __linux__ || __APPLE__
@@ -74,11 +76,11 @@ bool isCardMifarePlus()
         {
             if(auth_key == MIFARE_AUTHENT1A)
             {
-                auth_key = MIFARE_PLUS_AES_AUTHENT1A;
+                auth_key_aes = MIFARE_PLUS_AES_AUTHENT1A;
             }
             else if(auth_key == MIFARE_AUTHENT1B)
             {
-                auth_key = MIFARE_PLUS_AES_AUTHENT1B;
+                auth_key_aes = MIFARE_PLUS_AES_AUTHENT1B;
             }
 
             return true;
@@ -102,6 +104,25 @@ bool isCardMifarePlus()
     }
 }
 
+bool open_sam(void)
+{
+	UFR_STATUS status;
+	uint8_t atr_data[50];
+	uint8_t len = 50;
+
+	status = open_ISO7816_interface(atr_data, &len);
+	if(status)
+	{
+		printf("Error code = %02x\n", status);
+		return false;
+	}
+	else
+	{
+		printf("SAM opened\n");
+		return true;
+	}
+}
+
 //------------------------------------------------------------------------------
 void usage(void)
 {
@@ -122,7 +143,8 @@ void usage(void)
 			   " (7) - Linear read\n"
 			   " (8) - Linear write\n"
 			   " (a) - Reader key write (AES)\n"
-			   " (c) - Reader key write (CRYPTO 1)\n");
+			   " (b) - Reader key write (CRYPTO 1)\n"
+			   " (c) - SAM key write\n");
         printf("--------------------------------------------------\n");
 }
 
@@ -192,16 +214,17 @@ string ConvertToHexArray(const uint8_t *data, int len, string delimiter) {
 }
 
 void changeAuthMode()
-{ 
-    
+{
+
     string choice = "";
     cout << "Choose new authentication mode: " << endl;
     cout << "1. Reader key" << endl;
     cout << "2. Automatic key mode 1 - AKM1" << endl;
     cout << "3. Automatic key mode 2 - AKM2" << endl;
-    cout << "4. Provided key" << endl;		
-    cin >> choice;   
-	
+    cout << "4. Provided key" << endl;
+    cout << "5. SAM key" << endl;
+    cin >> choice;
+
     if(choice == "1")
     {
 	auth_mode = 1;
@@ -218,11 +241,22 @@ void changeAuthMode()
 	auth_mode = 4;
 
     }
-    else 
+    else if(choice == "5")
+    {
+        auth_mode = 5;
+        if(!sam_used)
+        {
+            if(open_sam())
+                sam_used = true;
+            else
+                cout << "Error during SAM open" << endl;
+        }
+    }
+    else
     {
 	cout << "Wrong input, enter number from 1 - 4" << endl;
     }
-    
+
     fflush(stdin);
 }
 
@@ -232,8 +266,8 @@ void changeAuthenticationKey()
     cout << "Choose new authentication key: " << endl;
     cout << "1. KEY A" << endl;
     cout << "2. KEY B" << endl;
-    cin >> key_for_auth;    
-	
+    cin >> key_for_auth;
+
     if(key_for_auth == "1")
     {
 	auth_key = MIFARE_AUTHENT1A;
@@ -253,12 +287,12 @@ void changeAuthenticationKey()
 void changeKeyIndex()
 {
     uint32_t index = 0;
-    cout << "Enter new key index: " << endl;
+    cout << "Enter new key index (0 - 31 for reader) (1 - 127 for SAM) : " << endl;
     scanf("%d", &index);
 
-    if(index < 0 || index > 31)
+    if(index < 0 || index > 127)
     {
-        cout << "Wrong input (key index are from 0 - 31)" << endl;
+        cout << "Wrong input (key index are from 0 - 127)" << endl;
     }
     else
     {
@@ -315,7 +349,7 @@ void changeProvidedKey()
     {
 	cout << "Wrong input, choose 1 or 2" << endl;
     }
-	
+
     fflush(stdin);
 }
 
@@ -340,6 +374,8 @@ void operation_BlockRead()
     uint8_t KEY[16];
     memset(KEY, 0xFF, 16);
 
+    status = UFR_OK;
+
     switch(auth_mode)
     {
         case 1:
@@ -354,13 +390,15 @@ void operation_BlockRead()
         case 4:
             if(isCardMifarePlus())
             {
-                status = BlockRead_PK(data, block_address, auth_key, PK_AES_key);
+                status = BlockRead_PK(data, block_address, auth_key_aes, PK_AES_key);
             }
             else
             {
                 status = BlockRead_PK(data, block_address, auth_key, PK_CRYPTO1_key);
             }
-
+            break;
+        case 5:
+            status = BlockReadSamKey(data, block_address, auth_key, key_index);
             break;
     }
 
@@ -377,7 +415,7 @@ void operation_BlockRead()
 
 void operation_BlockWrite()
 {
-    UFR_STATUS status;
+    UFR_STATUS status = UFR_WRITING_ERROR;
     uint32_t address = 0;
     uint8_t block_address = 0;
     uint8_t data[16];
@@ -425,14 +463,15 @@ void operation_BlockWrite()
 
             if(isCardMifarePlus())
             {
-                status = BlockWrite_PK(data, block_address, auth_key, PK_AES_key);
+                status = BlockWrite_PK(data, block_address, auth_key_aes, PK_AES_key);
             }
             else
             {
                 status = BlockWrite_PK(data, block_address, auth_key, PK_CRYPTO1_key);
             }
-
             break;
+        case 5:
+            status = BlockWriteSamKey(data, block_address, auth_key, key_index);
     }
 
     if(!status)
@@ -447,7 +486,7 @@ void operation_BlockWrite()
 
 void operation_LinearRead()
 {
-    UFR_STATUS status;
+    UFR_STATUS status = UFR_READING_ERROR;
     uint8_t data[8192];
     uint16_t linear_addr;
     uint16_t data_length;
@@ -490,7 +529,10 @@ void operation_LinearRead()
             {
                 status = LinearRead_PK(data, linear_addr, data_length, &bytes_returned, auth_key, PK_CRYPTO1_key);
             }
+            break;
 
+        case 5:
+            status = LinearReadSamKey(data, linear_addr, data_length, &bytes_returned, auth_key, key_index);
             break;
     }
 
@@ -507,7 +549,7 @@ void operation_LinearRead()
 
 void operation_LinearWrite()
 {
-    UFR_STATUS status;
+    UFR_STATUS status = UFR_WRITING_ERROR;
     uint8_t data[8192];
     uint16_t linear_addr;
     uint16_t data_length;
@@ -552,7 +594,6 @@ void operation_LinearWrite()
             break;
 
         case 4:
-
             if(isCardMifarePlus())
             {
                 status = LinearWrite_PK(data, linear_addr, data_length, &bytes_written, auth_key, PK_AES_key);
@@ -561,8 +602,12 @@ void operation_LinearWrite()
             {
                 status = LinearWrite_PK(data, linear_addr, data_length, &bytes_written, auth_key, PK_CRYPTO1_key);
             }
-
             break;
+
+        case 5:
+            status = LinearWriteSamKey(data, linear_addr, data_length, &bytes_written, auth_key, key_index);
+            break;
+
     }
 
     if(!status)
@@ -596,6 +641,8 @@ void printCurrentAuthConfig()
         case 4:
             curr_auth_mode = "Provided key";
             break;
+        case 5:
+            curr_auth_mode = "SAM key";
     }
 
     switch(auth_key)
@@ -626,9 +673,9 @@ void operation_ReaderKeyWrite()
     uint8_t reader_key_index;
     string rk_str = "";
     uint32_t rk_index;
-    
+
     cout << "Enter key index in the reader you want to write:" << endl;
-    scanf("%d%*c", &rk_index);    
+    scanf("%d%*c", &rk_index);
 
     fflush(stdin);
     cout << "Enter new key (6 bytes hex) with any delimiter:" << endl;
@@ -664,9 +711,9 @@ void operation_ReaderKeyWriteAes()
     uint8_t reader_key_index;
     string rk_str = "";
     uint32_t rk_index;
-    
+
     cout << "Enter key index in the reader you want to write:" << endl;
-    scanf("%d%*c", &rk_index);	
+    scanf("%d%*c", &rk_index);
 
     fflush(stdin);
     cout << "Enter new key (16 bytes hex) with any delimiter:" << endl;
@@ -693,4 +740,139 @@ void operation_ReaderKeyWriteAes()
     {
         cout << "Error, status is " << UFR_Status2String(status) << endl;
     }
+}
+
+void operation_SamKeyWrite(void)
+{
+    UFR_STATUS status;
+    int key_no_int, key_ver_int;
+    string key_str = "";
+    uint8_t card_key[16];
+    uint8_t key_a[6], key_b[6];
+    uint8_t master_key[16], master_key_ver;
+    uint8_t apdu_sw[2];
+    uint8_t auth_key_no;
+    char key;
+
+   	if(!sam_used)
+	{
+		if(open_sam())
+			sam_used = true;
+		else
+		{
+			printf("Error during SAM open \n");
+			return;
+		}
+	}
+
+    cout << " Enter SAM card key type" << endl;
+	cout << " (1) - SAM CRYPTO1 key" << endl;
+    cout << " (2) - SAM AES key" << endl;
+
+    while (!_kbhit())
+		;
+	key = _getch();
+
+	if(key == '1')
+    {
+        fflush(stdin);
+        cout << "Enter CRYPTO1 key A (6 bytes hex) with any delimiter:" << endl;
+        getline(cin, key_str);
+
+        key_str = eraseDelimiters(key_str);
+
+        if(key_str.length() != 12)
+        {
+            cout << "Key must be 6 bytes long" << endl;
+            return;
+        }
+
+        convertStrToByteArray(key_str, key_a);
+
+        fflush(stdin);
+        cout << "Enter CRYPTO1 key B (6 bytes hex) with any delimiter:" << endl;
+        getline(cin, key_str);
+
+        key_str = eraseDelimiters(key_str);
+
+        if(key_str.length() != 12)
+        {
+            cout << "Key must be 6 bytes long" << endl;
+            return;
+        }
+
+        convertStrToByteArray(key_str, key_b);
+    }
+    else if(key == '2')
+    {
+        fflush(stdin);
+        cout << "Enter AES key (16 bytes hex) with any delimiter:" << endl;
+        getline(cin, key_str);
+
+        key_str = eraseDelimiters(key_str);
+
+        if(key_str.length() != 32)
+        {
+            cout << "Key must be 16 bytes long" << endl;
+            return;
+        }
+
+        convertStrToByteArray(key_str, card_key);
+    }
+    else
+    {
+        cout << "Wrong choice" << endl;
+        return;
+    }
+
+    cout << "Enter SAM ordinal key number (0 - 127):" << endl;
+    scanf("%d%*c", &key_no_int);
+    key_index = key_no_int & 0xFF;
+
+    cout << "Enter SAM key for host authentication ordinal number:" << endl;
+    scanf("%d%*c", &key_no_int);
+    auth_key_no = key_no_int & 0x7F;
+
+    cout << "Enter version of host authentication key (0 - 255):" << endl;
+    scanf("%d%*c", &key_ver_int);
+    master_key_ver = key_ver_int & 0xFF;
+
+    fflush(stdin);
+    cout << "Enter AES host key (16 bytes hex) with any delimiter:" << endl;
+    getline(cin, key_str);
+
+    key_str = eraseDelimiters(key_str);
+
+    if(key_str.length() != 32)
+    {
+        cout << "Key must be 16 bytes long" << endl;
+        return;
+    }
+
+    convertStrToByteArray(key_str, master_key);
+
+    status = SAM_authenticate_host_AV2_plain(master_key, auth_key_no, master_key_ver, apdu_sw);
+
+    if(status)
+    {
+        cout << "Host authentication error" << endl;
+        cout << "Status is " << UFR_Status2String(status) << endl;
+        return;
+    }
+    else
+        cout << "Host authentication is OK" << endl;
+
+    if(key == '1')
+        status = SAM_change_key_entry_mifare_AV2_plain_one_key(key_index, key_a, key_b, auth_key_no, master_key_ver, 0xFF, apdu_sw);
+    else
+        status = SAM_change_key_entry_AES_AV2_plain_one_key(key_index, card_key, auth_key_no, auth_key_no, 0xFF, apdu_sw);
+
+    if(status)
+    {
+        cout << "Change key entry error" << endl;
+        cout << "Status is " << UFR_Status2String(status) << endl;
+        return;
+    }
+    else
+        cout << "AES card key stored successfully" << endl;
 }

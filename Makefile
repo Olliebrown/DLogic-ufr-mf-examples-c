@@ -45,12 +45,12 @@ osx macos :
 COMMON_SRC_FILES=main.cpp ufr.cpp
 #-------------------------------------------------------------------------------
 preclean :
-	cd win32_release_out && rm -f *.* && rm -rf src
-	cd win64_release_out && rm -f *.* && rm -rf src
+	cd win32_release_out && rm -f *.exe && rm -rf src
+	cd win64_release_out && rm -f *.exe && rm -rf src
 
 preclean_linux :
-	cd linux32_release_out && rm -f *.* && rm -rf src
-	cd linux64_release_out && rm -f *.* && rm -rf src
+	cd linux32_release_out && rm -f *.exe && rm -rf src
+	cd linux64_release_out && rm -f *.exe && rm -rf src
 
 clean :
 	cd src && rm -f *.o

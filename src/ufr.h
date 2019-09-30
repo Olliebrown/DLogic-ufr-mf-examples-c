@@ -25,8 +25,9 @@ void operation_LinearWrite();
 void operation_ReaderKeyWrite();
 void operation_ReaderKeyWriteAes();
 bool isCardMifarePlus();
-#if linux || __linux__ || __APPLE__
+void operation_SamKeyWrite(void);
 
+#if linux || __linux__ || __APPLE__
 int _kbhit(void);
 void _resetTermios(void);
 char _getch(void);

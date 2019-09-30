@@ -12,7 +12,7 @@
 #endif
 #include "../src/ufr.h"
 
-#define APP_VERSION	 "1.0"
+#define APP_VERSION	 "1.1"
 
 using namespace std;
 
@@ -31,7 +31,7 @@ int main(void)
 	UFR_STATUS status;
 
 	status = ReaderOpeningMode();
-    
+
     if (status != UFR_OK)
 	{
 		printf("Error while opening device, status is: 0x%08X\n", status);
@@ -111,7 +111,7 @@ UFR_STATUS ReaderOpeningMode()
 {
     char mode = 0;
 
-    UFR_STATUS status;
+    UFR_STATUS status = UFR_READER_OPENING_ERROR;
 
     cout << "Choose reader opening mode:" << endl;
     cout << "1. Simple reader open" << endl;
@@ -224,9 +224,15 @@ void menu(char key)
             printf("--------------------------------------------------\n");
             break;
 
+        case 'b':
+        case 'B':
+            operation_ReaderKeyWrite();
+            printf("--------------------------------------------------\n");
+            break;
+
         case 'c':
         case 'C':
-            operation_ReaderKeyWrite();
+            operation_SamKeyWrite();
             printf("--------------------------------------------------\n");
             break;
 
