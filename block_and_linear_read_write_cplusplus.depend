@@ -134,3 +134,34 @@
 	<sys/time.h>
 	<sys/ioctl.h>
 
+1570713472 source:c:\users\konferencija\desktop\projekti\ufr-mf-examples-c\src\main.cpp
+	<iostream>
+	<conio.h>
+	<windows.h>
+	<unistd.h>
+	<termios.h>
+	"../src/ufr.h"
+
+1570713472 c:\users\konferencija\desktop\projekti\ufr-mf-examples-c\src\ufr.h
+	<string>
+	<iostream>
+	<sstream>
+	<cstring>
+	<string.h>
+	"../lib/include/uFCoder.h"
+
+1570708236 c:\users\konferencija\desktop\projekti\ufr-mf-examples-c\lib\include\ufcoder.h
+	<stdint.h>
+	<stddef.h>
+	<jni.h>
+
+1570713990 source:c:\users\konferencija\desktop\projekti\ufr-mf-examples-c\src\ufr.cpp
+	"../src/ufr.h"
+	<conio.h>
+	<windows.h>
+	<unistd.h>
+	<termios.h>
+	<sys/types.h>
+	<sys/time.h>
+	<sys/ioctl.h>
+

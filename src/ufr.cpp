@@ -139,12 +139,23 @@ void usage(void)
 			   " (3) - Change key index\n"
 			   " (4) - Change provided key\n"
 			   " (5) - Block read\n"
-			   " (6) - Block write\n"
-			   " (7) - Linear read\n"
-			   " (8) - Linear write\n"
-			   " (a) - Reader key write (AES)\n"
-			   " (b) - Reader key write (CRYPTO 1)\n"
-			   " (c) - SAM key write\n");
+			   " (6) - Block in sector read\n"
+			   " (7) - Block write\n"
+			   " (8) - Block in sector write\n"
+			   " (9) - Linear read\n"
+			   " (a) - Linear write\n"
+			   " (b) - Value block read\n"
+			   " (c) - Value block write\n"
+			   " (d) - Value block increment\n"
+			   " (e) - Value block decrement\n"
+			   " (f) - Value block in sector read\n"
+			   " (g) - Value block in sector write\n"
+			   " (h) - Value block in sector increment\n"
+			   " (i) - Value block in sector decrement\n"
+			   " (j) - Sector trailer write\n"
+			   " (k) - Reader key write (AES)\n"
+			   " (l) - Reader key write (CRYPTO 1)\n"
+			   " (m) - SAM key write\n");
         printf("--------------------------------------------------\n");
 }
 
@@ -413,6 +424,66 @@ void operation_BlockRead()
     }
 }
 
+void operation_BlockInSectorRead()
+{
+    UFR_STATUS status;
+    uint32_t address = 0;
+    uint8_t block_address = 0;
+    uint8_t sector_address = 0;
+    uint8_t data[16];
+
+    cout << "Enter sector address you want to read:" << endl;
+    scanf("%d%*c", &address);
+
+    sector_address = address;
+
+    cout << "Enter block address you want to read:" << endl;
+    scanf("%d%*c", &address);
+
+    block_address = address;
+
+    uint8_t KEY[16];
+    memset(KEY, 0xFF, 16);
+
+    status = UFR_OK;
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = BlockInSectorRead(data, sector_address, block_address, auth_key, key_index);
+            break;
+        case 2:
+            status = BlockInSectorRead_AKM1(data, sector_address, block_address, auth_key);
+            break;
+        case 3:
+            status = BlockInSectorRead_AKM2(data, sector_address, block_address, auth_key);
+            break;
+        case 4:
+            if(isCardMifarePlus())
+            {
+                status = BlockInSectorRead_PK(data, sector_address, block_address, auth_key_aes, PK_AES_key);
+            }
+            else
+            {
+                status = BlockInSectorRead_PK(data, sector_address, block_address, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = BlockInSectorReadSamKey(data, sector_address, block_address, auth_key, key_index);
+            break;
+    }
+
+    if(!status)
+    {
+        cout << "Sector " << (int)sector_address << ", block " << (int)block_address << " data :" << endl;
+        cout << ConvertToHexArray(data, 16, " ") << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
+}
+
 void operation_BlockWrite()
 {
     UFR_STATUS status = UFR_WRITING_ERROR;
@@ -477,6 +548,76 @@ void operation_BlockWrite()
     if(!status)
     {
         cout << "Block " << (int)block_address << " successfully written" << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
+}
+
+void operation_BlockInSectorWrite()
+{
+    UFR_STATUS status = UFR_WRITING_ERROR;
+    uint32_t address = 0;
+    uint8_t sector_address = 0;
+    uint8_t block_address = 0;
+    uint8_t data[16];
+    string blockdataStr = "";
+
+    cout << "Enter sector address you want to write:" << endl;
+    scanf("%d%*c", &address);
+
+    sector_address = address;
+
+    cout << "Enter block address you want to write:" << endl;
+    scanf("%d%*c", &address);
+    fflush(stdin);
+
+    block_address = address;
+
+    cout << "Enter block data (16 bytes hex) with any delimiter:" << endl;
+    getline(cin, blockdataStr);
+    fflush(stdin);
+
+    blockdataStr = eraseDelimiters(blockdataStr);
+
+    if(blockdataStr.length() != 32)
+    {
+        cout << "Block data must be 16 bytes long" << endl;
+        return;
+    }
+
+    convertStrToByteArray(blockdataStr, data);
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = BlockInSectorWrite(data, sector_address, block_address, auth_key, key_index);
+            break;
+        case 2:
+            status = BlockInSectorWrite_AKM1(data, sector_address, block_address, auth_key);
+            break;
+        case 3:
+            status = BlockInSectorWrite_AKM2(data, sector_address, block_address, auth_key);
+            break;
+        case 4:
+
+            if(isCardMifarePlus())
+            {
+                status = BlockInSectorWrite_PK(data, sector_address, block_address, auth_key_aes, PK_AES_key);
+            }
+            else
+            {
+                status = BlockInSectorWrite_PK(data, sector_address, block_address, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = BlockInSectorWriteSamKey(data, sector_address, block_address, auth_key, key_index);
+    }
+
+    if(!status)
+    {
+        cout <<"Sector " << (int)sector_address << ", block " << (int)block_address << " successfully written" << endl;
     }
     else
     {
@@ -875,4 +1016,593 @@ void operation_SamKeyWrite(void)
     }
     else
         cout << "AES card key stored successfully" << endl;
+}
+
+void operation_ValueBlockRead()
+{
+    UFR_STATUS status = UFR_OK;
+    uint32_t address = 0;
+    uint8_t block_address = 0;
+    int32_t value = 0;
+    uint8_t value_addr = 0;
+
+    cout << "Enter block address in which you want to read value:" << endl;
+    scanf("%d%*c", &address);
+
+    if(address > 255)
+    {
+        cout << "Invalid block address" << endl;
+        return;
+    }
+
+    block_address = address;
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = ValueBlockRead(&value, &value_addr, block_address, auth_key, key_index);
+            break;
+        case 2:
+            status = ValueBlockRead_AKM1(&value, &value_addr, block_address, auth_key);
+            break;
+        case 3:
+            status = ValueBlockRead_AKM2(&value, &value_addr, block_address, auth_key);
+            break;
+        case 4:
+            if(isCardMifarePlus())
+            {
+                status = ValueBlockRead_PK(&value, &value_addr, block_address, auth_key_aes, PK_AES_key);
+            }
+            else
+            {
+                status = ValueBlockRead_PK(&value, &value_addr, block_address, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = ValueBlockReadSamKey(&value, &value_addr, block_address, auth_key, key_index);
+            break;
+    }
+
+    if(!status)
+    {
+        cout << "Block " << (int)block_address << " value at address " << (int)value_addr << ":" << endl;
+        cout << (int)value << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
+}
+
+void operation_ValueBlockWrite()
+{
+    UFR_STATUS status = UFR_OK;
+    uint32_t temp = 0;
+    uint8_t block_address = 0;
+    int32_t value = 0;
+    uint8_t value_addr = 0;
+
+    cout << "Enter block address in which you want to write value:" << endl;
+    scanf("%d%*c", &temp);
+
+    block_address = temp;
+
+    cout << "Enter value:" << endl;
+    scanf("%d%*c", &temp);
+
+    value = temp;
+
+    cout << "Enter value address:" << endl;
+    scanf("%d%*c", &temp);
+
+    value_addr = temp;
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = ValueBlockWrite(value, value_addr, block_address, auth_key, key_index);
+            break;
+        case 2:
+            status = ValueBlockWrite_AKM1(value, value_addr, block_address, auth_key);
+            break;
+        case 3:
+            status = ValueBlockWrite_AKM2(value, value_addr, block_address, auth_key);
+            break;
+        case 4:
+            if(isCardMifarePlus())
+            {
+                status = ValueBlockWrite_PK(value, value_addr, block_address, auth_key_aes, PK_AES_key);
+            }
+            else
+            {
+                status = ValueBlockWrite_PK(value, value_addr, block_address, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = ValueBlockWriteSamKey(value, value_addr, block_address, auth_key, key_index);
+            break;
+    }
+
+    if(!status)
+    {
+        cout << "Block " << (int)block_address << " value at address " << (int)value_addr << " successfully written." << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
+}
+
+void operation_ValueBlockIncrement()
+{
+    UFR_STATUS status = UFR_OK;
+    uint32_t temp = 0;
+    uint8_t block_address = 0;
+    int32_t value = 0;
+    uint8_t value_addr = 0;
+
+    cout << "Enter block address in which you want to increment value:" << endl;
+    scanf("%d%*c", &temp);
+
+    block_address = temp;
+
+    cout << "Enter increment value:" << endl;
+    scanf("%d%*c", &temp);
+
+    value = temp;
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = ValueBlockIncrement(value, block_address, auth_key, key_index);
+            break;
+        case 2:
+            status = ValueBlockIncrement_AKM1(value, block_address, auth_key);
+            break;
+        case 3:
+            status = ValueBlockIncrement_AKM2(value, block_address, auth_key);
+            break;
+        case 4:
+            if(isCardMifarePlus())
+            {
+                status = ValueBlockIncrement_PK(value, block_address, auth_key_aes, PK_AES_key);
+            }
+            else
+            {
+                status = ValueBlockIncrement_PK(value, block_address, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = ValueBlockIncrementSamKey(value, block_address, auth_key, key_index);
+            break;
+    }
+
+    if(!status)
+    {
+        cout << "Block " << (int)block_address << " value at address " << (int)value_addr << " successfully incremented." << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
+}
+
+void operation_ValueBlockDecrement()
+{
+    UFR_STATUS status = UFR_OK;
+    uint32_t temp = 0;
+    uint8_t block_address = 0;
+    int32_t value = 0;
+    uint8_t value_addr = 0;
+
+    cout << "Enter block address in which you want to decrement value:" << endl;
+    scanf("%d%*c", &temp);
+
+    block_address = temp;
+
+    cout << "Enter decrement value:" << endl;
+    scanf("%d%*c", &temp);
+
+    value = temp;
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = ValueBlockDecrement(value, block_address, auth_key, key_index);
+            break;
+        case 2:
+            status = ValueBlockDecrement_AKM1(value, block_address, auth_key);
+            break;
+        case 3:
+            status = ValueBlockDecrement_AKM2(value, block_address, auth_key);
+            break;
+        case 4:
+            if(isCardMifarePlus())
+            {
+                status = ValueBlockDecrement_PK(value, block_address, auth_key_aes, PK_AES_key);
+            }
+            else
+            {
+                status = ValueBlockDecrement_PK(value, block_address, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = ValueBlockDecrementSamKey(value, block_address, auth_key, key_index);
+            break;
+    }
+
+    if(!status)
+    {
+        cout << "Block " << (int)block_address << " value at address " << (int)value_addr << " successfully decremented." << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
+}
+
+void operation_ValueBlockInSectorRead()
+{
+    UFR_STATUS status = UFR_WRITING_ERROR;
+    uint32_t temp = 0;
+    uint8_t sector_address = 0;
+    uint8_t block_address = 0;
+    int32_t value = 0;
+    uint8_t value_addr = 0;
+
+    cout << "Enter sector address in which you want to read value:" << endl;
+    scanf("%d%*c", &temp);
+
+    sector_address = temp;
+
+    cout << "Enter block address in which you want to read value:" << endl;
+    scanf("%d%*c", &temp);
+
+    block_address = temp;
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = ValueBlockInSectorRead(&value, &value_addr, sector_address, block_address, auth_key, key_index);
+            break;
+        case 2:
+            status = ValueBlockInSectorRead_AKM1(&value, &value_addr, sector_address, block_address, auth_key);
+            break;
+        case 3:
+            status = ValueBlockInSectorRead_AKM2(&value, &value_addr, sector_address, block_address, auth_key);
+            break;
+        case 4:
+            if(isCardMifarePlus())
+            {
+                status = ValueBlockInSectorRead_PK(&value, &value_addr, sector_address, block_address, auth_key_aes, PK_AES_key);
+            }
+            else
+            {
+                status = ValueBlockInSectorRead_PK(&value, &value_addr, sector_address, block_address, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = ValueBlockInSectorReadSamKey(&value, &value_addr, sector_address, block_address, auth_key, key_index);
+            break;
+    }
+
+    if(!status)
+    {
+        cout << "Sector " << (int)sector_address << ", block " << (int)block_address << " value at address " << (int)value_addr << ":" << endl;
+        cout << (int)value << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
+}
+
+void operation_ValueBlockInSectorWrite()
+{
+    UFR_STATUS status = UFR_WRITING_ERROR;
+    uint32_t temp = 0;
+    uint8_t sector_address = 0;
+    uint8_t block_address = 0;
+    int32_t value = 0;
+    uint8_t value_addr = 0;
+
+    cout << "Enter sector address in which you want to write value:" << endl;
+    scanf("%d%*c", &temp);
+
+    sector_address = temp;
+
+    cout << "Enter block address in which you want to write value:" << endl;
+    scanf("%d%*c", &temp);
+
+    block_address = temp;
+
+    cout << "Enter value:" << endl;
+    scanf("%d%*c", &temp);
+
+    value = temp;
+
+    cout << "Enter value address:" << endl;
+    scanf("%d%*c", &temp);
+
+    value_addr = temp;
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = ValueBlockInSectorWrite(value, value_addr, sector_address, block_address, auth_key, key_index);
+            break;
+        case 2:
+            status = ValueBlockInSectorWrite_AKM1(value, value_addr, sector_address, block_address, auth_key);
+            break;
+        case 3:
+            status = ValueBlockInSectorWrite_AKM2(value, value_addr, sector_address, block_address, auth_key);
+            break;
+        case 4:
+            if(isCardMifarePlus())
+            {
+                status = ValueBlockInSectorWrite_PK(value, value_addr, sector_address, block_address, auth_key_aes, PK_AES_key);
+            }
+            else
+            {
+                status = ValueBlockInSectorWrite_PK(value, value_addr, sector_address, block_address, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = ValueBlockInSectorWriteSamKey(value, value_addr, sector_address, block_address, auth_key, key_index);
+            break;
+    }
+
+    if(!status)
+    {
+        cout << "Sector " << (int)sector_address << ", block " << (int)block_address << " value at address " << (int)value_addr << " successfully written." << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
+}
+
+void operation_ValueBlockInSectorIncrement()
+{
+    UFR_STATUS status = UFR_WRITING_ERROR;
+    uint32_t temp = 0;
+    uint8_t sector_address = 0;
+    uint8_t block_address = 0;
+    int32_t value = 0;
+    uint8_t value_addr = 0;
+
+    cout << "Enter sector address in which you want to increment value:" << endl;
+    scanf("%d%*c", &temp);
+
+    sector_address = temp;
+
+    cout << "Enter block address in which you want to increment value:" << endl;
+    scanf("%d%*c", &temp);
+
+    block_address = temp;
+
+    cout << "Enter increment value:" << endl;
+    scanf("%d%*c", &temp);
+
+    value = temp;
+
+    value_addr = temp;
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = ValueBlockInSectorIncrement(value, sector_address, block_address, auth_key, key_index);
+            break;
+        case 2:
+            status = ValueBlockInSectorIncrement_AKM1(value, sector_address, block_address, auth_key);
+            break;
+        case 3:
+            status = ValueBlockInSectorIncrement_AKM2(value, sector_address, block_address, auth_key);
+            break;
+        case 4:
+            if(isCardMifarePlus())
+            {
+                status = ValueBlockInSectorIncrement_PK(value, sector_address, block_address, auth_key_aes, PK_AES_key);
+            }
+            else
+            {
+                status = ValueBlockInSectorIncrement_PK(value, sector_address, block_address, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = ValueBlockInSectorIncrementSamKey(value, sector_address, block_address, auth_key, key_index);
+            break;
+    }
+
+    if(!status)
+    {
+        cout << "Sector " << (int)sector_address << ", block " << (int)block_address << " value at address " << (int)value_addr << " successfully incremented." << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
+}
+
+void operation_ValueBlockInSectorDecrement()
+{
+    UFR_STATUS status = UFR_WRITING_ERROR;
+    uint32_t temp = 0;
+    uint8_t sector_address = 0;
+    uint8_t block_address = 0;
+    int32_t value = 0;
+    uint8_t value_addr = 0;
+
+    cout << "Enter sector address in which you want to decrement value:" << endl;
+    scanf("%d%*c", &temp);
+
+    sector_address = temp;
+
+    cout << "Enter block address in which you want to decrement value:" << endl;
+    scanf("%d%*c", &temp);
+
+    block_address = temp;
+
+    cout << "Enter decrement value:" << endl;
+    scanf("%d%*c", &temp);
+
+    value = temp;
+
+    value_addr = temp;
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = ValueBlockInSectorDecrement(value, sector_address, block_address, auth_key, key_index);
+            break;
+        case 2:
+            status = ValueBlockInSectorDecrement_AKM1(value, sector_address, block_address, auth_key);
+            break;
+        case 3:
+            status = ValueBlockInSectorDecrement_AKM2(value, sector_address, block_address, auth_key);
+            break;
+        case 4:
+            if(isCardMifarePlus())
+            {
+                status = ValueBlockInSectorDecrement_PK(value, sector_address, block_address, auth_key_aes, PK_AES_key);
+            }
+            else
+            {
+                status = ValueBlockInSectorDecrement_PK(value, sector_address, block_address, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = ValueBlockInSectorDecrementSamKey(value, sector_address, block_address, auth_key, key_index);
+            break;
+    }
+
+    if(!status)
+    {
+        cout << "Sector " << (int)sector_address << ", block " << (int)block_address << " value at address " << (int)value_addr << " successfully decremented." << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
+}
+
+void operation_SectorTrailerWrite()
+{
+    UFR_STATUS status = UFR_OK;
+    uint8_t addressing_mode;
+    uint8_t address = 0;
+    uint8_t new_key_A[6];
+    uint8_t block0_access_bits = 0;
+    uint8_t block1_access_bits = 0;
+    uint8_t block2_access_bits = 0;
+    uint8_t sector_trailer_access_bits = 0;
+    uint8_t sector_trailer_byte9 = 0;
+    uint8_t new_key_B[6];
+    uint32_t temp = 0;
+    string key_str = "";
+
+    cout << "Choose addressing mode:" << endl;
+    cout << "1. Absolute     2. Relative" << endl;
+    scanf("%d%*c", &temp);
+
+    addressing_mode = temp - 1;
+
+    cout << "Enter sector trailer address:" << endl;
+    scanf("%d%*c", &temp);
+
+    address = temp;
+
+    cout << "Enter block 0 access bits:" << endl;
+    scanf("%d%*c", &temp);
+
+    block0_access_bits = temp;
+
+    cout << "Enter block 1 access bits:" << endl;
+    scanf("%d%*c", &temp);
+
+    block1_access_bits = temp;
+
+    cout << "Enter block 2 access bits:" << endl;
+    scanf("%d%*c", &temp);
+
+    block2_access_bits = temp;
+
+    cout << "Enter sector trailer access bits:" << endl;
+    scanf("%d%*c", &temp);
+
+    sector_trailer_access_bits = temp;
+
+    cout << "Enter sector trailer byte 9:" << endl;
+    scanf("%d%*c", &temp);
+
+    sector_trailer_byte9 = temp;
+
+    cout << "Enter new key A:" << endl;
+    getline(cin, key_str);
+    key_str = eraseDelimiters(key_str);
+    fflush(stdin);
+
+    if(key_str.length() != 12)
+    {
+        cout << "Key A must be 6 bytes long" << endl;
+        return;
+    }
+
+    convertStrToByteArray(key_str, new_key_A);
+
+    key_str = "";
+
+    cout << "Enter new key B:" << endl;
+    getline(cin, key_str);
+    key_str = eraseDelimiters(key_str);
+    fflush(stdin);
+
+    if(key_str.length() != 12)
+    {
+        cout << "Key B must be 6 bytes long" << endl;
+        return;
+    }
+
+    convertStrToByteArray(key_str, new_key_B);
+
+    switch(auth_mode)
+    {
+        case 1:
+            status = SectorTrailerWrite(addressing_mode, address, new_key_A, block0_access_bits, block1_access_bits, block2_access_bits, sector_trailer_access_bits, sector_trailer_byte9,
+                                        new_key_B, auth_key, key_index);
+            break;
+        case 2:
+            status = SectorTrailerWrite_AKM1(addressing_mode, address, new_key_A, block0_access_bits, block1_access_bits, block2_access_bits, sector_trailer_access_bits, sector_trailer_byte9,
+                                        new_key_B, auth_key);
+            break;
+        case 3:
+            status = SectorTrailerWrite_AKM2(addressing_mode, address, new_key_A, block0_access_bits, block1_access_bits, block2_access_bits, sector_trailer_access_bits, sector_trailer_byte9,
+                                        new_key_B, auth_key);
+            break;
+        case 4:
+            if(isCardMifarePlus())
+            {
+                status = SectorTrailerWrite_PK(addressing_mode, address, new_key_A, block0_access_bits, block1_access_bits, block2_access_bits, sector_trailer_access_bits, sector_trailer_byte9,
+                                        new_key_B, auth_key, PK_AES_key);
+            }
+            else
+            {
+                status = SectorTrailerWrite_PK(addressing_mode, address, new_key_A, block0_access_bits, block1_access_bits, block2_access_bits, sector_trailer_access_bits, sector_trailer_byte9,
+                                        new_key_B, auth_key, PK_CRYPTO1_key);
+            }
+            break;
+        case 5:
+            status = SectorTrailerWriteSamKey(addressing_mode, address, new_key_A, block0_access_bits, block1_access_bits, block2_access_bits, sector_trailer_access_bits, sector_trailer_byte9,
+                                        new_key_B, auth_key, key_index);
+            break;
+    }
+
+    if(!status)
+    {
+        cout << "Sector " << (int)address << " successfully written." << endl;
+    }
+    else
+    {
+        cout << "Error, status is " << UFR_Status2String(status) << endl;
+    }
 }

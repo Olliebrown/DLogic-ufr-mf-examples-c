@@ -204,34 +204,99 @@ void menu(char key)
             break;
 
         case '6':
-            operation_BlockWrite();
+            operation_BlockInSectorRead();
             printf("--------------------------------------------------\n");
             break;
 
         case '7':
-            operation_LinearRead();
+            operation_BlockWrite();
             printf("--------------------------------------------------\n");
             break;
 
         case '8':
-            operation_LinearWrite();
+            operation_BlockInSectorWrite();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case '9':
+            operation_LinearRead();
             printf("--------------------------------------------------\n");
             break;
 
         case 'a':
         case 'A':
-            operation_ReaderKeyWriteAes();
+            operation_LinearWrite();
             printf("--------------------------------------------------\n");
             break;
 
         case 'b':
         case 'B':
-            operation_ReaderKeyWrite();
+            operation_ValueBlockRead();
             printf("--------------------------------------------------\n");
             break;
 
         case 'c':
         case 'C':
+            operation_ValueBlockWrite();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case 'd':
+        case 'D':
+            operation_ValueBlockIncrement();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case 'e':
+        case 'E':
+            operation_ValueBlockDecrement();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case 'k':
+        case 'K':
+            operation_ReaderKeyWriteAes();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case 'f':
+        case 'F':
+            operation_ValueBlockInSectorRead();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case 'g':
+        case 'G':
+            operation_ValueBlockInSectorWrite();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case 'h':
+        case 'H':
+            operation_ValueBlockInSectorIncrement();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case 'i':
+        case 'I':
+            operation_ValueBlockInSectorDecrement();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case 'l':
+        case 'L':
+            operation_ReaderKeyWrite();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case 'j':
+        case 'J':
+            operation_SectorTrailerWrite();
+            printf("--------------------------------------------------\n");
+            break;
+
+        case 'm':
+        case 'M':
             operation_SamKeyWrite();
             printf("--------------------------------------------------\n");
             break;
