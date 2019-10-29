@@ -20,7 +20,6 @@ uint8_t auth_key = MIFARE_AUTHENT1A;
 uint8_t auth_key_aes;
 uint8_t key_index = 0;
 uint8_t PK_CRYPTO1_key[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-uint8_t PK_AES_key[16] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 bool sam_used = false;
 
 
@@ -61,49 +60,6 @@ void ConvertStringToUint8Array(std::string str, uint8_t *array)
     }
 }
 
-bool isCardMifarePlus()
-{
-    UFR_STATUS status;
-    uint8_t card_type;
-
-    status = GetDlogicCardType(&card_type);
-
-    if(!status)
-    {
-        if(card_type == DL_MIFARE_PLUS_S_2K_SL3 || card_type == DL_MIFARE_PLUS_X_2K_SL3
-           || card_type == DL_MIFARE_PLUS_EV1_2K_SL3 || card_type == DL_MIFARE_PLUS_S_4K_SL3
-           || card_type == DL_MIFARE_PLUS_X_4K_SL3 || card_type == DL_MIFARE_PLUS_EV1_4K_SL3)
-        {
-            if(auth_key == MIFARE_AUTHENT1A)
-            {
-                auth_key_aes = MIFARE_PLUS_AES_AUTHENT1A;
-            }
-            else if(auth_key == MIFARE_AUTHENT1B)
-            {
-                auth_key_aes = MIFARE_PLUS_AES_AUTHENT1B;
-            }
-
-            return true;
-        }
-        else
-        {
-            if(auth_key == MIFARE_PLUS_AES_AUTHENT1A)
-            {
-                auth_key = MIFARE_AUTHENT1A;
-            }
-            else if(auth_key == MIFARE_PLUS_AES_AUTHENT1B)
-            {
-                auth_key = MIFARE_AUTHENT1B;
-            }
-            return false;
-        }
-    }
-    else
-    {
-        return false;
-    }
-}
-
 bool open_sam(void)
 {
 	UFR_STATUS status;
@@ -129,7 +85,7 @@ void usage(void)
         printCurrentAuthConfig();
 		printf("+------------------------------------------------+\n"
 			   "|   Block (Read/Write) and Linear (Read/Write)   |\n"
-			   "|                 version 1.0                    |\n");
+			   "|                 version 1.2                    |\n");
 	   cout << "|             DLL version " << GetDllVersionStr() << "                 |\n";
 		cout <<"+------------------------------------------------+\n";
 		printf("                             For exit, hit escape.\n");
@@ -153,9 +109,8 @@ void usage(void)
 			   " (h) - Value block in sector increment\n"
 			   " (i) - Value block in sector decrement\n"
 			   " (j) - Sector trailer write\n"
-			   " (k) - Reader key write (AES)\n"
-			   " (l) - Reader key write (CRYPTO 1)\n"
-			   " (m) - SAM key write\n");
+			   " (k) - Reader key write (CRYPTO 1)\n"
+			   " (l) - SAM key write\n");
         printf("--------------------------------------------------\n");
 }
 
@@ -314,53 +269,22 @@ void changeKeyIndex()
 
 void changeProvidedKey()
 {
-    int choice;
-    cout << "What key do you want to change?" << endl;
-    cout << "1. Provided key (CRYPTO 1 key)" << endl;
-    cout << "2. Provided key (AES key)" << endl;
-    scanf("%d%*c", &choice);
     fflush(stdin);
     string new_key = "";
 
-    if(choice == 1)
+    cout << "Enter new provided CRYPTO 1 key (6 bytes) with any delimiter:" << endl;
+    getline(cin, new_key);
+
+    new_key = eraseDelimiters(new_key);
+
+    if(new_key.length() != 12)
     {
-	    cout << "Enter new provided CRYPTO 1 key (6 bytes) with any delimiter:" << endl;
-            getline(cin, new_key);
-
-            new_key = eraseDelimiters(new_key);
-
-            if(new_key.length() != 12)
-            {
-                cout << "Key must be 6 bytes long" << endl;
-            }
-            else
-            {
-                convertStrToByteArray(new_key, PK_CRYPTO1_key);
-            }
-            fflush(stdin);
-    }
-    else if(choice == 2)
-    {
-    	cout << "Enter new provided AES key (16 bytes) with any delimiter:" << endl;
-            getline(cin, new_key);
-
-            new_key = eraseDelimiters(new_key);
-
-            if(new_key.length() != 32)
-            {
-                cout << "Key must be 16 bytes long" << endl;
-            }
-            else
-            {
-                convertStrToByteArray(new_key, PK_AES_key);
-            }
-            fflush(stdin);
+        cout << "Key must be 6 bytes long" << endl;
     }
     else
     {
-	cout << "Wrong input, choose 1 or 2" << endl;
+        convertStrToByteArray(new_key, PK_CRYPTO1_key);
     }
-
     fflush(stdin);
 }
 
@@ -399,14 +323,7 @@ void operation_BlockRead()
             status = BlockRead_AKM2(data, block_address, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = BlockRead_PK(data, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = BlockRead_PK(data, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = BlockRead_PK(data, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = BlockReadSamKey(data, block_address, auth_key, key_index);
@@ -459,14 +376,7 @@ void operation_BlockInSectorRead()
             status = BlockInSectorRead_AKM2(data, sector_address, block_address, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = BlockInSectorRead_PK(data, sector_address, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = BlockInSectorRead_PK(data, sector_address, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = BlockInSectorRead_PK(data, sector_address, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = BlockInSectorReadSamKey(data, sector_address, block_address, auth_key, key_index);
@@ -531,15 +441,7 @@ void operation_BlockWrite()
             status = BlockWrite_AKM2(data, block_address, auth_key);
             break;
         case 4:
-
-            if(isCardMifarePlus())
-            {
-                status = BlockWrite_PK(data, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = BlockWrite_PK(data, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = BlockWrite_PK(data, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = BlockWriteSamKey(data, block_address, auth_key, key_index);
@@ -601,15 +503,7 @@ void operation_BlockInSectorWrite()
             status = BlockInSectorWrite_AKM2(data, sector_address, block_address, auth_key);
             break;
         case 4:
-
-            if(isCardMifarePlus())
-            {
-                status = BlockInSectorWrite_PK(data, sector_address, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = BlockInSectorWrite_PK(data, sector_address, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = BlockInSectorWrite_PK(data, sector_address, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = BlockInSectorWriteSamKey(data, sector_address, block_address, auth_key, key_index);
@@ -661,15 +555,7 @@ void operation_LinearRead()
             break;
 
         case 4:
-
-            if(isCardMifarePlus())
-            {
-                status = LinearRead_PK(data, linear_addr, data_length, &bytes_returned, auth_key, PK_AES_key);
-            }
-            else
-            {
-                status = LinearRead_PK(data, linear_addr, data_length, &bytes_returned, auth_key, PK_CRYPTO1_key);
-            }
+            status = LinearRead_PK(data, linear_addr, data_length, &bytes_returned, auth_key, PK_CRYPTO1_key);
             break;
 
         case 5:
@@ -735,14 +621,7 @@ void operation_LinearWrite()
             break;
 
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = LinearWrite_PK(data, linear_addr, data_length, &bytes_written, auth_key, PK_AES_key);
-            }
-            else
-            {
-                status = LinearWrite_PK(data, linear_addr, data_length, &bytes_written, auth_key, PK_CRYPTO1_key);
-            }
+            status = LinearWrite_PK(data, linear_addr, data_length, &bytes_written, auth_key, PK_CRYPTO1_key);
             break;
 
         case 5:
@@ -789,11 +668,9 @@ void printCurrentAuthConfig()
     switch(auth_key)
     {
         case MIFARE_AUTHENT1A:
-        case MIFARE_PLUS_AES_AUTHENT1A:
             auth_key_str = "KEY A";
             break;
         case MIFARE_AUTHENT1B:
-        case MIFARE_PLUS_AES_AUTHENT1B:
             auth_key_str = "KEY B";
             break;
     }
@@ -802,7 +679,6 @@ void printCurrentAuthConfig()
     conf << "Authentication key : " << auth_key_str << endl;
     conf << "Key index : " << to_string(key_index) << endl;
     conf << "Provided key (CRYPTO 1): " << ConvertToHexArray(PK_CRYPTO1_key, 6, " ") << endl;
-    conf << "Provided key (AES key): " << ConvertToHexArray(PK_AES_key, 16, " ") << endl;
 
     cout << conf.str() << endl;
 }
@@ -838,44 +714,6 @@ void operation_ReaderKeyWrite()
     if(!status)
     {
         cout << "CRYPTO 1 key at index " << (int)reader_key_index << " successfully written into reader" << endl;
-    }
-    else
-    {
-        cout << "Error, status is " << UFR_Status2String(status) << endl;
-    }
-}
-
-void operation_ReaderKeyWriteAes()
-{
-    UFR_STATUS status;
-    uint8_t reader_key[16];
-    uint8_t reader_key_index;
-    string rk_str = "";
-    uint32_t rk_index;
-
-    cout << "Enter key index in the reader you want to write:" << endl;
-    scanf("%d%*c", &rk_index);
-
-    fflush(stdin);
-    cout << "Enter new key (16 bytes hex) with any delimiter:" << endl;
-    getline(cin, rk_str);
-
-    rk_str = eraseDelimiters(rk_str);
-
-    if(rk_str.length() != 32)
-    {
-        cout << "Key must be 16 bytes long" << endl;
-        return;
-    }
-
-    reader_key_index = rk_index;
-    convertStrToByteArray(rk_str, reader_key);
-
-    status = uFR_int_DesfireWriteAesKey(reader_key_index, reader_key);
-
-    if(!status)
-    {
-        cout << "AES key at index " << (int)reader_key_index << " successfully written into reader" << endl;
     }
     else
     {
@@ -1049,14 +887,7 @@ void operation_ValueBlockRead()
             status = ValueBlockRead_AKM2(&value, &value_addr, block_address, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = ValueBlockRead_PK(&value, &value_addr, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = ValueBlockRead_PK(&value, &value_addr, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = ValueBlockRead_PK(&value, &value_addr, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = ValueBlockReadSamKey(&value, &value_addr, block_address, auth_key, key_index);
@@ -1109,14 +940,7 @@ void operation_ValueBlockWrite()
             status = ValueBlockWrite_AKM2(value, value_addr, block_address, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = ValueBlockWrite_PK(value, value_addr, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = ValueBlockWrite_PK(value, value_addr, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = ValueBlockWrite_PK(value, value_addr, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = ValueBlockWriteSamKey(value, value_addr, block_address, auth_key, key_index);
@@ -1163,14 +987,7 @@ void operation_ValueBlockIncrement()
             status = ValueBlockIncrement_AKM2(value, block_address, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = ValueBlockIncrement_PK(value, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = ValueBlockIncrement_PK(value, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = ValueBlockIncrement_PK(value, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = ValueBlockIncrementSamKey(value, block_address, auth_key, key_index);
@@ -1217,14 +1034,7 @@ void operation_ValueBlockDecrement()
             status = ValueBlockDecrement_AKM2(value, block_address, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = ValueBlockDecrement_PK(value, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = ValueBlockDecrement_PK(value, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = ValueBlockDecrement_PK(value, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = ValueBlockDecrementSamKey(value, block_address, auth_key, key_index);
@@ -1272,14 +1082,7 @@ void operation_ValueBlockInSectorRead()
             status = ValueBlockInSectorRead_AKM2(&value, &value_addr, sector_address, block_address, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = ValueBlockInSectorRead_PK(&value, &value_addr, sector_address, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = ValueBlockInSectorRead_PK(&value, &value_addr, sector_address, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = ValueBlockInSectorRead_PK(&value, &value_addr, sector_address, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = ValueBlockInSectorReadSamKey(&value, &value_addr, sector_address, block_address, auth_key, key_index);
@@ -1338,14 +1141,7 @@ void operation_ValueBlockInSectorWrite()
             status = ValueBlockInSectorWrite_AKM2(value, value_addr, sector_address, block_address, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = ValueBlockInSectorWrite_PK(value, value_addr, sector_address, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = ValueBlockInSectorWrite_PK(value, value_addr, sector_address, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = ValueBlockInSectorWrite_PK(value, value_addr, sector_address, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = ValueBlockInSectorWriteSamKey(value, value_addr, sector_address, block_address, auth_key, key_index);
@@ -1400,14 +1196,7 @@ void operation_ValueBlockInSectorIncrement()
             status = ValueBlockInSectorIncrement_AKM2(value, sector_address, block_address, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = ValueBlockInSectorIncrement_PK(value, sector_address, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = ValueBlockInSectorIncrement_PK(value, sector_address, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = ValueBlockInSectorIncrement_PK(value, sector_address, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = ValueBlockInSectorIncrementSamKey(value, sector_address, block_address, auth_key, key_index);
@@ -1462,14 +1251,7 @@ void operation_ValueBlockInSectorDecrement()
             status = ValueBlockInSectorDecrement_AKM2(value, sector_address, block_address, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = ValueBlockInSectorDecrement_PK(value, sector_address, block_address, auth_key_aes, PK_AES_key);
-            }
-            else
-            {
-                status = ValueBlockInSectorDecrement_PK(value, sector_address, block_address, auth_key, PK_CRYPTO1_key);
-            }
+            status = ValueBlockInSectorDecrement_PK(value, sector_address, block_address, auth_key, PK_CRYPTO1_key);
             break;
         case 5:
             status = ValueBlockInSectorDecrementSamKey(value, sector_address, block_address, auth_key, key_index);
@@ -1580,16 +1362,8 @@ void operation_SectorTrailerWrite()
                                         new_key_B, auth_key);
             break;
         case 4:
-            if(isCardMifarePlus())
-            {
-                status = SectorTrailerWrite_PK(addressing_mode, address, new_key_A, block0_access_bits, block1_access_bits, block2_access_bits, sector_trailer_access_bits, sector_trailer_byte9,
-                                        new_key_B, auth_key, PK_AES_key);
-            }
-            else
-            {
-                status = SectorTrailerWrite_PK(addressing_mode, address, new_key_A, block0_access_bits, block1_access_bits, block2_access_bits, sector_trailer_access_bits, sector_trailer_byte9,
+            status = SectorTrailerWrite_PK(addressing_mode, address, new_key_A, block0_access_bits, block1_access_bits, block2_access_bits, sector_trailer_access_bits, sector_trailer_byte9,
                                         new_key_B, auth_key, PK_CRYPTO1_key);
-            }
             break;
         case 5:
             status = SectorTrailerWriteSamKey(addressing_mode, address, new_key_A, block0_access_bits, block1_access_bits, block2_access_bits, sector_trailer_access_bits, sector_trailer_byte9,

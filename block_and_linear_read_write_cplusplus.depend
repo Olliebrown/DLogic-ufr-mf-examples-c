@@ -103,7 +103,7 @@
 	<termios.h>
 	"../src/ufr.h"
 
-1568102144 source:f:\git\ufr\c-examples\ufr-mf-examples-c\src\main.cpp
+1572247520 source:f:\git\ufr\c-examples\ufr-mf-examples-c\src\main.cpp
 	<iostream>
 	<conio.h>
 	<windows.h>
@@ -111,7 +111,7 @@
 	<termios.h>
 	"../src/ufr.h"
 
-1568102110 f:\git\ufr\c-examples\ufr-mf-examples-c\src\ufr.h
+1572246757 f:\git\ufr\c-examples\ufr-mf-examples-c\src\ufr.h
 	<string>
 	<iostream>
 	<sstream>
@@ -119,12 +119,12 @@
 	<string.h>
 	"../lib/include/uFCoder.h"
 
-1567176167 f:\git\ufr\c-examples\ufr-mf-examples-c\lib\include\ufcoder.h
+1569828183 f:\git\ufr\c-examples\ufr-mf-examples-c\lib\include\ufcoder.h
 	<stdint.h>
 	<stddef.h>
 	<jni.h>
 
-1568358096 source:f:\git\ufr\c-examples\ufr-mf-examples-c\src\ufr.cpp
+1572247408 source:f:\git\ufr\c-examples\ufr-mf-examples-c\src\ufr.cpp
 	"../src/ufr.h"
 	<conio.h>
 	<windows.h>

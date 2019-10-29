@@ -26,7 +26,6 @@ void operation_LinearRead(void);
 void operation_LinearWrite(void);
 void operation_ReaderKeyWrite(void);
 void operation_ReaderKeyWriteAes(void);
-bool isCardMifarePlus(void);
 void operation_SamKeyWrite(void);
 void operation_ValueBlockRead(void);
 void operation_ValueBlockWrite(void);

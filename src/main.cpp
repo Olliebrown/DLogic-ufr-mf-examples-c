@@ -253,12 +253,6 @@ void menu(char key)
             printf("--------------------------------------------------\n");
             break;
 
-        case 'k':
-        case 'K':
-            operation_ReaderKeyWriteAes();
-            printf("--------------------------------------------------\n");
-            break;
-
         case 'f':
         case 'F':
             operation_ValueBlockInSectorRead();
@@ -283,8 +277,8 @@ void menu(char key)
             printf("--------------------------------------------------\n");
             break;
 
-        case 'l':
-        case 'L':
+        case 'k':
+        case 'K':
             operation_ReaderKeyWrite();
             printf("--------------------------------------------------\n");
             break;
@@ -295,8 +289,8 @@ void menu(char key)
             printf("--------------------------------------------------\n");
             break;
 
-        case 'm':
-        case 'M':
+        case 'l':
+        case 'L':
             operation_SamKeyWrite();
             printf("--------------------------------------------------\n");
             break;
