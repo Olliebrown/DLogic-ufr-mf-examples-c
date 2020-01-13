@@ -20,6 +20,7 @@ help :
 	echo " 'make win'  : on Windows (x86, x86_64 and InnoSetup)"
 	echo " 'make lin'  : on Linux (x86, x86_64)"
 	echo " 'make macos': on macOS (macOS dylib x86/x86_64)"
+	echo " 'make rpi'  : on RPi (arm-hf)"
 	echo "-------------------------------------------------------------------------"
 	echo
 
@@ -105,6 +106,7 @@ CPPCL32=g++
 CPPCL64=g++
 LNKL32=-s -L../lib/linux/x86 -m32
 LNKL64=-s -L../lib/linux/x86_64 -m64
+LNKRPI=-s -L../lib/linux/armhf
 
 lin32_release :
 	echo "Building 32-bit executable, version:" $(APP_VER)
@@ -122,6 +124,15 @@ lin64_release :
 	cd src && $(CPPCL64) $(LNKL64) *.o -o $(LINBUILD_ARTEFACT) -Wl,-Bdynamic ../lib/linux/x86_64/libuFCoder-x86_64.so -ldl
 	mv src/$(LINBUILD_ARTEFACT) linux64_release_out
 	echo "Compiled binary is in the folder 'linux64_release_out'"
+	make post_mk
+
+rpi:
+	echo "Building executable, version:" $(APP_VER)
+	make clean
+	cd src && $(CPPCL32) $(CFLGLIN) $(COMMON_SRC_FILES) -pthread
+	cd src && $(CPPCL32) $(LNKRPI) *.o -o $(LINBUILD_ARTEFACT) -Wl,-Bdynamic ../lib/linux/arm-hf/libuFCoder-armhf.so -ldl
+	mv src/$(LINBUILD_ARTEFACT) rpi_release_out
+	echo "Compiled binary is in the folder 'rpi_release_out'"
 	make post_mk
 
 LNKOSX=-v -static-libstdc++ -L../lib/macos/x86_64
